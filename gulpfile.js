@@ -198,27 +198,63 @@ gulp.task('scripts', ['jshint'], function() {
     .pipe(writeToManifest('scripts'));
 });
 
+// ### Move Fonts
+gulp.task('move-fonts', function() {
+  
+  return gulp.src('./node_modules/nasawds/src/fonts/**/*')
+    .pipe(gulp.dest('assets/fonts'));
+
+});
+
 // ### Fonts
 // `gulp fonts` - Grabs all the fonts and outputs them in a flattened directory
 // structure. See: https://github.com/armed/gulp-flatten
-gulp.task('fonts', function() {
+gulp.task('fonts', function() { 
   return gulp.src(globs.fonts)
     .pipe(flatten())
     .pipe(gulp.dest(path.dist + 'fonts'))
     .pipe(browserSync.stream());
 });
 
-// ### Images
-// `gulp images` - Run lossless compression on all the images.
-gulp.task('images', function() {
+gulp.task('copy-theme-images', function (done) {
+
+  var stream = gulp.src('./img/**/*')
+    .pipe(gulp.dest('assets/img'));
+
+  return stream;
+
+});
+
+gulp.task('copy-nasawds-images', function (done) {
+
+  var stream = gulp.src('./node_modules/nasawds/src/img/**/*')
+    .pipe(gulp.dest('assets/img'));
+
+  return stream;
+
+});
+
+gulp.task('compress-images', function (done) {
   return gulp.src(globs.images)
     .pipe(imagemin({
       progressive: true,
       interlaced: true,
       svgoPlugins: [{removeUnknownsAndDefaults: false}, {cleanupIDs: false}]
     }))
-    .pipe(gulp.dest(path.dist + 'images'))
+    .pipe(gulp.dest(path.dist + 'img'))
     .pipe(browserSync.stream());
+});
+
+gulp.task('images', function (done) {
+  
+  runSequence(
+    [
+      ['copy-theme-images', 'copy-nasawds-images'],
+      'compress-images'
+    ],
+    done
+  );
+
 });
 
 // ### JSHint
@@ -235,6 +271,24 @@ gulp.task('jshint', function() {
 // ### Clean
 // `gulp clean` - Deletes the build folder entirely.
 gulp.task('clean', require('del').bind(null, [path.dist]));
+
+gulp.task('clean-fonts', function () {
+  return del('assets/fonts/');
+});
+
+gulp.task('clean-images', function () {
+  return del('assets/img/');
+});
+
+gulp.task('clean-assets', function (done) {
+  runSequence(
+    [
+      'clean-fonts',
+      'clean-images'
+    ],
+    done
+  );
+});
 
 // ### Watch
 // `gulp watch` - Use BrowserSync to proxy your dev server and synchronize code
@@ -254,7 +308,7 @@ gulp.task('watch', function() {
   gulp.watch([path.source + 'styles/**/*'], ['styles']);
   gulp.watch([path.source + 'scripts/**/*'], ['jshint', 'scripts']);
   gulp.watch([path.source + 'fonts/**/*'], ['fonts']);
-  gulp.watch([path.source + 'images/**/*'], ['images']);
+  gulp.watch([path.source + 'img/**/*'], ['images']);
   gulp.watch(['bower.json', 'assets/manifest.json'], ['build']);
 });
 
@@ -262,8 +316,10 @@ gulp.task('watch', function() {
 // `gulp build` - Run all the build tasks but don't clean up beforehand.
 // Generally you should be running `gulp` instead of `gulp build`.
 gulp.task('build', function(callback) {
-  runSequence('styles',
+  runSequence('clean-assets',
+              'styles',
               'scripts',
+              'move-fonts',
               ['fonts', 'images'],
               callback);
 });
