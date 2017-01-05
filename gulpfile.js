@@ -4,6 +4,7 @@ var autoprefixer = require('gulp-autoprefixer');
 var browserSync  = require('browser-sync').create();
 var changed      = require('gulp-changed');
 var concat       = require('gulp-concat');
+var del          = require('del');
 var flatten      = require('gulp-flatten');
 var gulp         = require('gulp');
 var gulpif       = require('gulp-if');
@@ -248,10 +249,8 @@ gulp.task('compress-images', function (done) {
 gulp.task('images', function (done) {
   
   runSequence(
-    [
-      ['copy-theme-images', 'copy-nasawds-images'],
-      'compress-images'
-    ],
+    ['copy-theme-images', 'copy-nasawds-images'],
+    'compress-images',
     done
   );
 
